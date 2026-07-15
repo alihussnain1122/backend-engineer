@@ -1,0 +1,150 @@
+# Global ignore rules for a multi-project backend workspace
+# Applies to all current and future subfolders under this repository.
+
+# -----------------------------
+# Dependencies / package caches
+# -----------------------------
+node_modules/
+bower_components/
+jspm_packages/
+vendor/
+.pnp/
+.pnp.js
+.yarn/
+
+# Python envs and caches
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Java / JVM / Gradle
+.gradle/
+build/
+out/
+target/
+
+# Rust / Go / .NET outputs
+bin/
+obj/
+
+# -----------------------------
+# Secrets / credentials / keys
+# -----------------------------
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Generic secret/credential files
+*.secret
+*.secrets
+*secret*
+*credential*
+*credentials*
+*password*
+
+# Keys and certs
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# Cloud and service auth
+*.ovpn
+*.kubeconfig
+kubeconfig
+*.tfvars
+*.tfvars.json
+
+# AWS
+.aws/
+
+# GCP
+*.gcp.json
+gcp-key*.json
+
+# Firebase / Google service accounts
+google-services.json
+GoogleService-Info.plist
+serviceAccount*.json
+
+# -----------------------------
+# Logs / runtime / temporary
+# -----------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+tmp/
+temp/
+.tmp/
+.cache/
+
+# -----------------------------
+# Build, coverage, reports
+# -----------------------------
+dist/
+coverage/
+.nyc_output/
+*.lcov
+
+# -----------------------------
+# OS / editor noise
+# -----------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# -----------------------------
+# Docker and local overrides
+# -----------------------------
+docker-compose.override.yml
+.docker/
+
+# -----------------------------
+# Databases / local state
+# -----------------------------
+*.sqlite
+*.sqlite3
+*.db
+
+# -----------------------------
+# Archives and backups
+# -----------------------------
+*.zip
+*.tar
+*.tgz
+*.gz
+*.7z
+*.bak
+*.backup
+*.old
