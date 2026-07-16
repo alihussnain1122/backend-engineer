@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>API Shield Admin Dashboard</title>
+	<style>
+		:root {
+			color-scheme: dark;
+			--bg: #0b1220;
+			--panel: #111a2e;
+			--panel-2: #16213a;
+			--text: #e5eefc;
+			--muted: #91a4c7;
+			--accent: #6ee7b7;
+			--accent-2: #60a5fa;
+			--danger: #fb7185;
+			--border: rgba(148, 163, 184, 0.18);
+		}
+
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			background:
+				radial-gradient(circle at top left, rgba(96, 165, 250, 0.18), transparent 30%),
+				radial-gradient(circle at top right, rgba(110, 231, 183, 0.14), transparent 26%),
+				var(--bg);
+			color: var(--text);
+		}
+
+		.wrap {
+			max-width: 1080px;
+			margin: 0 auto;
+			padding: 32px 20px 40px;
+		}
+
+		header {
+			display: flex;
+			justify-content: space-between;
+			gap: 16px;
+			align-items: end;
+			margin-bottom: 24px;
+			flex-wrap: wrap;
+		}
+
+		h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); }
+		p { margin: 0; color: var(--muted); }
+
+		.toolbar {
+			display: flex;
+			gap: 12px;
+			flex-wrap: wrap;
+			margin: 20px 0 24px;
+		}
+
+		.connection {
+			display: flex;
+			gap: 10px;
+			flex-wrap: wrap;
+			margin: 18px 0 8px;
+		}
+
+		.connection input {
+			min-width: min(100%, 320px);
+			flex: 1 1 320px;
+		}
+
+		button, input {
+			border-radius: 12px;
+			border: 1px solid var(--border);
+			background: rgba(17, 26, 46, 0.9);
+			color: var(--text);
+			padding: 12px 14px;
+			font: inherit;
+		}
+
+		button {
+			cursor: pointer;
+			transition: transform 0.15s ease, border-color 0.15s ease;
+		}
+
+		button:hover { transform: translateY(-1px); border-color: rgba(110, 231, 183, 0.35); }
+		button.primary { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #04111f; font-weight: 700; }
+		button.danger { background: rgba(251, 113, 133, 0.12); color: #fecdd3; }
+		button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(12, 1fr);
+			gap: 16px;
+		}
+
+		.card {
+			background: linear-gradient(180deg, rgba(22, 33, 58, 0.96), rgba(17, 26, 46, 0.96));
+			border: 1px solid var(--border);
+			border-radius: 18px;
+			padding: 18px;
+			box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+		}
+
+		.stat {
+			grid-column: span 4;
+		}
+
+		.panel {
+			grid-column: 1 / -1;
+		}
+
+		.stat h2, .panel h2 {
+			margin: 0 0 8px;
+			font-size: 14px;
+			color: var(--muted);
+			font-weight: 600;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+		}
+
+		.big {
+			font-size: 40px;
+			font-weight: 800;
+			margin: 0;
+		}
+
+		.meta { color: var(--muted); margin-top: 8px; font-size: 14px; }
+
+		.list {
+			margin-top: 14px;
+			display: grid;
+			gap: 10px;
+		}
+
+		.row {
+			display: flex;
+			justify-content: space-between;
+			gap: 12px;
+			align-items: center;
+			padding: 14px;
+			border-radius: 14px;
+			background: rgba(255, 255, 255, 0.03);
+			border: 1px solid rgba(148, 163, 184, 0.12);
+			flex-wrap: wrap;
+		}
+
+		.row strong { display: block; }
+		.row small { color: var(--muted); }
+
+		.empty {
+			color: var(--muted);
+			padding: 14px;
+			border: 1px dashed rgba(148, 163, 184, 0.22);
+			border-radius: 14px;
+		}
+
+		.status {
+			margin-top: 14px;
+			color: var(--muted);
+			min-height: 1.4em;
+		}
+
+		@media (max-width: 860px) {
+			.stat { grid-column: 1 / -1; }
+		}
+	</style>
+</head>
+<body>
+	<main class="wrap">
+		<header>
+			<div>
+				<h1>API Shield Admin</h1>
+				<p>Monitor blocked clients and clear entries when needed.</p>
+			</div>
+			<div class="toolbar">
+				<button class="primary" id="refreshBtn">Refresh dashboard</button>
+			</div>
+		</header>
+
+		<div class="connection">
+			<input id="apiBaseInput" type="url" placeholder="http://localhost:3000" aria-label="Backend API base URL" />
+			<button id="saveBaseBtn">Save backend URL</button>
+		</div>
+
+		<section class="grid">
+			<article class="card stat">
+				<h2>Total blocked</h2>
+				<p class="big" id="blockedCount">0</p>
+				<p class="meta">Currently blocked clients in Redis</p>
+			</article>
+
+			<article class="card stat">
+				<h2>Quick list</h2>
+				<p class="big" id="quickCount">0</p>
+				<p class="meta">Blocked client IDs found by the scan</p>
+			</article>
+
+			<article class="card stat">
+				<h2>Last updated</h2>
+				<p class="big" id="updatedAt">--</p>
+				<p class="meta">Dashboard refresh timestamp</p>
+			</article>
+
+			<article class="card panel">
+				<h2>Blocked Clients</h2>
+				<div class="list" id="blockedList">
+					<div class="empty">Loading blocked clients...</div>
+				</div>
+				<div class="status" id="status"></div>
+			</article>
+		</section>
+	</main>
+
+	<script>
+		const blockedCount = document.getElementById("blockedCount");
+		const quickCount = document.getElementById("quickCount");
+		const updatedAt = document.getElementById("updatedAt");
+		const blockedList = document.getElementById("blockedList");
+		const status = document.getElementById("status");
+		const refreshBtn = document.getElementById("refreshBtn");
+		const apiBaseInput = document.getElementById("apiBaseInput");
+		const saveBaseBtn = document.getElementById("saveBaseBtn");
+		const apiBase = (() => {
+			const savedBase = window.localStorage.getItem("apiShieldBaseUrl");
+			return savedBase || window.API_BASE_URL || "http://localhost:3000";
+		})();
+		let refreshTimer = null;
+		let failureCount = 0;
+
+		apiBaseInput.value = apiBase;
+
+		function setStatus(message, isError = false) {
+			status.textContent = message;
+			status.style.color = isError ? "#fecdd3" : "var(--muted)";
+		}
+
+		function formatTtl(ttlSeconds) {
+			if (ttlSeconds === -1) return "No expiry";
+			if (ttlSeconds === -2) return "Expired";
+			if (ttlSeconds < 60) return `${ttlSeconds}s remaining`;
+			const minutes = Math.floor(ttlSeconds / 60);
+			const seconds = ttlSeconds % 60;
+			return `${minutes}m ${seconds}s remaining`;
+		}
+
+		async function requestJson(url, options = {}) {
+			let response;
+
+			try {
+				response = await fetch(new URL(url, apiBaseInput.value.trim() || apiBase), {
+					headers: { "Content-Type": "application/json" },
+					...options,
+				});
+			} catch (error) {
+				throw new Error(`Cannot reach backend at ${apiBaseInput.value.trim() || apiBase}`);
+			}
+
+			const data = await response.json().catch(() => ({}));
+
+			if (!response.ok) {
+				throw new Error(data.error || `Request failed with status ${response.status}`);
+			}
+
+			return data;
+		}
+
+		async function unblockClient(clientId) {
+			setStatus(`Unblocking ${clientId}...`);
+			await requestJson(`/admin/blocked/${encodeURIComponent(clientId)}`, { method: "DELETE" });
+			await loadDashboard();
+		}
+
+		async function loadDashboard() {
+			refreshBtn.disabled = true;
+			setStatus("Refreshing...");
+
+			try {
+				const [stats, blocked] = await Promise.all([
+					requestJson("/admin/stats"),
+					requestJson("/admin/blocked"),
+				]);
+
+				const blockedClients = blocked.blockedClients || [];
+				blockedCount.textContent = stats.totalBlockedClients ?? blockedClients.length;
+				quickCount.textContent = (stats.blockedClientIds || []).length;
+				updatedAt.textContent = new Date().toLocaleTimeString();
+
+				if (blockedClients.length === 0) {
+					blockedList.innerHTML = '<div class="empty">No blocked clients right now.</div>';
+					setStatus("Dashboard loaded.");
+					return;
+				}
+
+				blockedList.innerHTML = blockedClients
+					.map(({ clientId, ttlSeconds }) => `
+						<div class="row">
+							<div>
+								<strong>${clientId}</strong>
+								<small>${formatTtl(ttlSeconds)}</small>
+							</div>
+							<button class="danger" data-client-id="${clientId}">Unblock</button>
+						</div>
+					`)
+					.join("");
+
+				blockedList.querySelectorAll("button[data-client-id]").forEach((button) => {
+					button.addEventListener("click", () => unblockClient(button.dataset.clientId));
+				});
+
+				setStatus("Dashboard loaded.");
+				failureCount = 0;
+			} catch (error) {
+				blockedList.innerHTML = '<div class="empty">Unable to load blocked clients.</div>';
+				setStatus(error.message, true);
+				failureCount += 1;
+				if (failureCount >= 3 && refreshTimer) {
+					clearInterval(refreshTimer);
+					refreshTimer = null;
+					setStatus(`Backend unavailable at ${apiBaseInput.value.trim() || apiBase}. Update the URL and click Save.`, true);
+				}
+			} finally {
+				refreshBtn.disabled = false;
+			}
+		}
+
+		function startPolling() {
+			if (refreshTimer) {
+				clearInterval(refreshTimer);
+			}
+
+			refreshTimer = setInterval(loadDashboard, 5000);
+		}
+
+		saveBaseBtn.addEventListener("click", () => {
+			const nextBase = apiBaseInput.value.trim() || "http://localhost:3000";
+			window.localStorage.setItem("apiShieldBaseUrl", nextBase);
+			setStatus(`Saved backend URL: ${nextBase}`);
+			failureCount = 0;
+			startPolling();
+			loadDashboard();
+		});
+
+		refreshBtn.addEventListener("click", loadDashboard);
+		loadDashboard();
+		startPolling();
+	</script>
+</body>
+</html>
