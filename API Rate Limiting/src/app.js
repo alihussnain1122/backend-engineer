@@ -1,8 +1,10 @@
 import express from "express";
 import apiRouter from "./routes/api.js";
-import adminRouter from "./routes/admin.js";
+import redisClient from "./config/redis.js";
+import { createAdminRouter } from "./routes/admin.js";
 
 const app = express();
+const adminRouter = createAdminRouter(redisClient);
 
 app.set("trust proxy", 1);
 app.use(express.json());

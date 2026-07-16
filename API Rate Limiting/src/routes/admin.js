@@ -1,53 +1,84 @@
 import { Router } from "express";
-import { blockClient, getBlockReason, unblockClient } from "../services/blocklistService.js";
+import redisClient from "../config/redis.js";
 
-const router = Router();
+const BLOCKED_KEY_PREFIX = "blocked:";
 
-router.post("/block/:clientId", async (req, res, next) => {
-	try {
-		const { clientId } = req.params;
-		const { reason, durationMs } = req.body || {};
+function getClientIdFromBlockedKey(key) {
+  return key.startsWith(BLOCKED_KEY_PREFIX) ? key.slice(BLOCKED_KEY_PREFIX.length) : key;
+}
 
-		await blockClient(clientId, reason || "manual", durationMs);
+async function listBlockedKeys(redis) {
+  const blockedKeys = [];
+  let cursor = "0";
 
-		res.status(201).json({
-			message: "Client blocked",
-			clientId,
-			reason: reason || "manual",
-		});
-	} catch (error) {
-		next(error);
-	}
-});
+  do {
+    const [nextCursor, keys] = await redis.scan(cursor, "MATCH", `${BLOCKED_KEY_PREFIX}*`, "COUNT", 100);
+    blockedKeys.push(...keys);
+    cursor = nextCursor;
+  } while (cursor !== "0");
 
-router.delete("/block/:clientId", async (req, res, next) => {
-	try {
-		const { clientId } = req.params;
+  return blockedKeys;
+}
 
-		await unblockClient(clientId);
+export function createAdminRouter(redis = redisClient) {
+  const router = Router();
 
-		res.json({
-			message: "Client unblocked",
-			clientId,
-		});
-	} catch (error) {
-		next(error);
-	}
-});
+  router.get("/stats", async (req, res) => {
+    try {
+      const blockedKeys = await listBlockedKeys(redis);
+      const blockedClientIds = blockedKeys.map(getClientIdFromBlockedKey).sort();
 
-router.get("/block/:clientId", async (req, res, next) => {
-	try {
-		const { clientId } = req.params;
-		const reason = await getBlockReason(clientId);
+      return res.json({
+        totalBlockedClients: blockedClientIds.length,
+        blockedClientIds,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        error: "Failed to load admin stats",
+      });
+    }
+  });
 
-		res.json({
-			clientId,
-			blocked: Boolean(reason),
-			reason: reason || null,
-		});
-	} catch (error) {
-		next(error);
-	}
-});
+  router.get("/blocked", async (req, res) => {
+    try {
+      const blockedKeys = await listBlockedKeys(redis);
+      const blockedClients = await Promise.all(
+        blockedKeys.map(async (key) => ({
+          clientId: getClientIdFromBlockedKey(key),
+          ttlSeconds: await redis.ttl(key),
+        })),
+      );
 
-export default router;
+      blockedClients.sort((left, right) => left.clientId.localeCompare(right.clientId));
+
+      return res.json({
+        blockedClients,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        error: "Failed to load blocked clients",
+      });
+    }
+  });
+
+  router.delete("/blocked/:clientId", async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const deletedCount = await redis.del(`${BLOCKED_KEY_PREFIX}${clientId}`);
+
+      return res.json({
+        message: deletedCount > 0 ? "Client unblocked" : "Client not blocked",
+        clientId,
+        unblocked: deletedCount > 0,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        error: "Failed to unblock client",
+      });
+    }
+  });
+
+  return router;
+}
+
+export default createAdminRouter();

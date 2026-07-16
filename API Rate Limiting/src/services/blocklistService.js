@@ -9,7 +9,11 @@ function getBlockKey(clientId) {
 }
 
 function isRedisLike(value) {
-  return value && typeof value === "object" && typeof value.get === "function" && typeof value.set === "function";
+  return (
+	value &&
+	typeof value === "object" &&
+	(typeof value.exists === "function" || typeof value.get === "function" || typeof value.set === "function")
+  );
 }
 
 function normalizeClientArgs(clientIdOrClient, maybeClientId, maybeClient) {
@@ -52,6 +56,16 @@ export async function blockClient(
   maybeClient,
   maybeClientId,
 ) {
+	if (isRedisLike(clientIdOrClient) && typeof maybeReason === "string" && maybeDurationMs === undefined && maybeClient === undefined && maybeClientId === undefined) {
+		const redis = clientIdOrClient;
+		const clientId = maybeReason;
+		const durationSeconds = BLOCK_DURATION_SECONDS;
+
+		await redis.set(getBlockKey(clientId), "manual", "EX", durationSeconds);
+		console.warn(`🚫 Client blocked: ${clientId}`);
+		return;
+	}
+
   const { clientId, client } = normalizeClientArgs(clientIdOrClient, maybeClientId, maybeClient);
   const redis = client || (await getDefaultRedisClient());
   const reason = typeof maybeReason === "string" ? maybeReason : "manual";
