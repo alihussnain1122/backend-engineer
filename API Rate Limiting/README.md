@@ -164,6 +164,4 @@ The suite uses Node's built-in test runner and exercises the blocklist, abuse de
 - If Redis connection logs appear, confirm `REDIS_URL` points at a reachable Redis instance.
 - If admin pages return empty results, make sure clients are actually blocked in Redis.
 
-## License
 
-MIT if you choose to add one later.
