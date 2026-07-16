@@ -10,6 +10,7 @@ Professional Express + Redis example for IP/API-key based rate limiting.
 - `src/middleware/` contains client identification, abuse detection, and rate limiting.
 - `src/services/` wraps Redis-backed state and logging.
 - `src/utils/` holds shared constants.
+- `scripts/SlidingWindow.lua` contains the Redis sliding-window rate limit logic.
 - `tests/` contains Node.js test files.
 
 ## Requirements
@@ -52,3 +53,4 @@ Professional Express + Redis example for IP/API-key based rate limiting.
 
 - If you use `rediss://`, TLS is enabled automatically.
 - If `REDIS_URL` is missing, the app will try the local Redis default.
+- The rate limiter uses the Redis Lua sliding-window script.
