@@ -1,18 +1,20 @@
 {
   "name": "api-rate-limiting",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Express and Redis based API rate limiting demo",
+  "main": "src/server.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
